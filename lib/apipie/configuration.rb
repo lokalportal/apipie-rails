@@ -165,7 +165,7 @@ module Apipie
       @link_extension = ".html"
       @record = false
       @languages = []
-      @default_locale = initial_locale
+      @default_locale = 'en'
       @locale = lambda { |locale| @default_locale }
       @translate = lambda { |str, locale| str }
       @persist_show_in_doc = false
