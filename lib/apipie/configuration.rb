@@ -140,11 +140,6 @@ module Apipie
       @api_routes || Rails.application.routes
     end
 
-    def initial_locale
-      return Rails.configuration.i18n.default_locale.to_s if 'Rails'.safe_constantize
-      'en'
-    end
-
     def initialize
       @markup = Apipie::Markup::RDoc.new
       @app_name = "Another API"
