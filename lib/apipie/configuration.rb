@@ -140,6 +140,11 @@ module Apipie
       @api_routes || Rails.application.routes
     end
 
+    def initial_locale
+      return Rails.configuration.i18n.default_locale.to_s if 'Rails'.safe_constantize
+      'en'
+    end
+
     def initialize
       @markup = Apipie::Markup::RDoc.new
       @app_name = "Another API"
@@ -165,7 +170,7 @@ module Apipie
       @link_extension = ".html"
       @record = false
       @languages = []
-      @default_locale = 'en'
+      @default_locale = initial_locale
       @locale = lambda { |locale| @default_locale }
       @translate = lambda { |str, locale| str }
       @persist_show_in_doc = false
