@@ -22,7 +22,7 @@ Apipie.configure do |config|
   #
   #     rake apipie:cache
   #
-  config.use_cache = Rails.env.production?
+  config.use_cache = true
   # config.cache_dir = File.join(Rails.root, "public", "apipie-cache") # optional
 
   # set to enable/disable reloading controllers (and the documentation with it),

@@ -1,6 +1,6 @@
 class OverriddenConcernsController < ApplicationController
 
-  resource_description { resource_id 'overridden_concern_resources' }
+  resource_description { resource_id 'overridden concern resources' }
 
   apipie_concern_subst(:concern => 'user')
   include ::Concerns::SampleController
