@@ -224,7 +224,7 @@ module Apipie
         @current_http_method = method_key
 
         methods[method_key] = {
-            tags: [tag_name_for_resource(ruby_method.resource)] + warning_tags,
+            tags: [tag_name_for_resource(ruby_method.resource)] + warning_tags + ruby_method.tag_list.tags,
             consumes: params_in_body? ? ['application/json'] : ['application/x-www-form-urlencoded', 'multipart/form-data'],
             operationId: op_id,
             summary: Apipie.app.translate(api.short_description, @current_lang),
@@ -643,7 +643,24 @@ module Apipie
         add_params_from_hash(swagger_result, body_param_defs_hash)
       end
 
+      add_headers_from_hash(swagger_result, method.headers) if method.headers.present?
+
       swagger_result
+    end
+
+
+    def add_headers_from_hash(swagger_params_array, headers)
+      swagger_headers = headers.map do |header|
+        {
+          name: header[:name],
+          in: 'header',
+          required: header[:options][:required],
+          description: header[:description],
+          type:  header[:options][:type] || 'string'
+        }
+
+      end
+      swagger_params_array.push(*swagger_headers)
     end
 
 
@@ -684,7 +701,7 @@ module Apipie
         end
       end
     end
-    
+
   end
 
 end

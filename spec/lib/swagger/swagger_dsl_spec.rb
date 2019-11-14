@@ -166,6 +166,19 @@ describe "Swagger Responses" do
 
     end
 
+    describe "PetsController#show_plain_response_with_tags" do
+      subject do
+        desc._methods[:show_plain_response_with_tags]
+      end
+
+      it "should return tags with 'Dogs', 'Cats', and 'LivingBeings'" do
+        returns_obj = subject.tag_list
+        puts returns_obj.inspect
+
+        expect(returns_obj.tags).to eq(%w[Dogs Cats LivingBeings])
+      end
+    end
+
     describe "PetsController#show_as_properties" do
       subject do
         desc._methods[:show_as_properties]
@@ -436,6 +449,40 @@ describe "Swagger Responses" do
   end
 
   #==============================================================================
+  # TaggedCatsController is a demonstration of how tags may be defined in the
+  # controller's resource description so that they may be automatically prefixed
+  # to a particular operation's tags.
+  #==============================================================================
+
+  describe TaggedCatsController do
+    describe "TaggedCatsController#show_as_properties" do
+      subject do
+        desc._methods[:show_as_properties]
+      end
+
+      it "should return tags with 'Dogs', 'Pets', and 'Animals'" do
+        returns_obj = subject.tag_list
+        puts returns_obj.inspect
+
+        expect(returns_obj.tags).to eq(%w[Dogs Pets Animals])
+      end
+    end
+
+    describe "TaggedCatsController#show_as_same_properties" do
+      subject do
+        desc._methods[:show_as_same_properties]
+      end
+
+      it "should return tags with 'Dogs', 'Pets', 'Puma', and 'Animals'" do
+        returns_obj = subject.tag_list
+        puts returns_obj.inspect
+
+        expect(returns_obj.tags).to eq(%w[Dogs Pets Puma Animals])
+      end
+    end
+  end
+
+  #==============================================================================
   # PetsUsingSelfDescribingClassesController is a demonstration of how
   # responses can be described using manual generation of a property description
   # array
@@ -558,6 +605,7 @@ describe "Swagger Responses" do
 
         expect(returns_obj.code).to eq(200)
         expect(returns_obj.is_array?).to eq(false)
+
         expect(returns_obj).to match_field_structure([:pet_name, :animal_type, :age])
       end
 
