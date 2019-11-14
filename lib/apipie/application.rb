@@ -55,8 +55,7 @@ module Apipie
     # this method does in depth search for the route controller
     def route_app_controller(app, route, visited_apps = [])
       if route.defaults[:controller]
-        controller_name = (route.defaults[:controller] + 'Controller').camelize
-        controller_name.safe_constantize
+        (route.defaults[:controller].camelize + 'Controller').safe_constantize
       end
     end
 
