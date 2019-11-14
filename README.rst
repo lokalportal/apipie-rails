@@ -283,6 +283,8 @@ Example:
         property :enum1, ['v1', 'v2'], :desc => "One of 2 possible string values"
       end
    end
+   tags %w[profiles logins]
+   tags 'more', 'related', 'resources'
    description "method description"
    formats ['json', 'jsonp', 'xml']
    meta :message => "Some very important info"
@@ -1154,7 +1156,7 @@ You must then call the ``apipie_validations`` method yourself, e.g.:
 
 .. code:: ruby
 
-   before_action: :apipie_validations
+   before_action :apipie_validations
 
 This is useful if you have before_actions which use parameter values: just add them
 after the ``apipie_validations`` before_action.
