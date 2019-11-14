@@ -1,6 +1,22 @@
  Changelog
 ===========
 
+[v0.5.16](https://github.com/Apipie/apipie-rails/tree/v0.5.16) (2019-05-22)
+--------
+
+[Full Changelog](https://github.com/Apipie/apipie-rails/compare/v0.5.15...v0.5.16)
+
+- Load file directly instead of using Rails constant [\#665](https://github.com/Apipie/apipie-rails/pull/665) ([speckins](https://github.com/speckins))
+
+[v0.5.15](https://github.com/Apipie/apipie-rails/tree/v0.5.15) (2019-01-03)
+--------
+[Full Changelog](https://github.com/Apipie/apipie-rails/compare/v0.5.14...v0.5.15)
+
+
+- Fix authorization of resources [\#655](https://github.com/Apipie/apipie-rails/pull/655) ([NielsKSchjoedt](https://github.com/NielsKSchjoedt))
+- Use configured value when swagger\_content\_type\_input argument is not passed [\#648](https://github.com/Apipie/apipie-rails/pull/648) ([nullnull](https://github.com/nullnull))
+- Fix "ArgumentError: string contains null byte" on malformed stings [\#477](https://github.com/Apipie/apipie-rails/pull/477) ([avokhmin](https://github.com/avokhmin))
+
 v0.5.14
 -------
 - HTML escape validator values [\#645](https://github.com/Apipie/apipie-rails/pull/645) ([ekohl](https://github.com/ekohl))
