@@ -12,8 +12,22 @@ describe "Swagger Responses" do
 
   let(:controller_class ) { described_class }
 
+  def get_ref(ref)
+    name = ref.split('#/definitions/')[1].to_sym
+    swagger[:definitions][name]
+  end
+
+  def resolve_refs(schema)
+    if schema['$ref']
+      return get_ref(schema['$ref'])
+    end
+    schema
+  end
+
   def swagger_response_for(path, code=200, method='get')
-    swagger[:paths][path][method][:responses][code]
+    response = swagger[:paths][path][method][:responses][code]
+    response[:schema] = resolve_refs(response[:schema])
+    response
   end
 
   def swagger_params_for(path, method='get')
@@ -30,6 +44,64 @@ describe "Swagger Responses" do
     matching[0]
   end
 
+
+
+
+  #
+  # Matcher to validate the hierarchy of fields described in an internal 'returns' object (without checking their type)
+  #
+  # For example, code such as:
+  #           returns_obj = Apipie.get_resource_description(...)._methods.returns.detect{|e| e.code=200})
+  #           expect(returns_obj).to match_param_structure([:pet_name, :animal_type, :pet_measurements => [:weight, :height]])
+  #
+  # will verify that the payload structure described for the response of return code 200 is:
+  #           {
+  #             "pet_name": <any>,
+  #             "animal_type": <any>,
+  #             "pet_measurements": {
+  #                 "weight": <any>,
+  #                 "height": <any>
+  #             }
+  #           }
+  #
+  #
+  RSpec::Matchers.define :match_field_structure do |expected|
+    @last_message = nil
+
+    match do |actual|
+      deep_match?(actual, expected)
+    end
+
+    def deep_match?(actual, expected, breadcrumb=[])
+      num = 0
+      for pdesc in expected do
+        if pdesc.is_a? Symbol
+          return false unless fields_match?(actual.params_ordered[num], pdesc, breadcrumb)
+        elsif pdesc.is_a? Hash
+          return false unless fields_match?(actual.params_ordered[num], pdesc.keys[0], breadcrumb)
+          return false unless deep_match?(actual.params_ordered[num].validator, pdesc.values[0], breadcrumb + [pdesc.keys[0]])
+        end
+        num+=1
+      end
+      @fail_message = "expected property count#{breadcrumb == [] ? '' : ' of ' + (breadcrumb).join('.')} (#{actual.params_ordered.count}) to be #{num}"
+      actual.params_ordered.count == num
+    end
+
+    def fields_match?(param, expected_name, breadcrumb)
+      return false unless have_field?(param, expected_name, breadcrumb)
+      @fail_message = "expected #{(breadcrumb + [param.name]).join('.')} to eq #{(breadcrumb + [expected_name]).join('.')}"
+      param.name.to_s == expected_name.to_s
+    end
+
+    def have_field?(field, expected_name, breadcrumb)
+      @fail_message = "expected property #{(breadcrumb+[expected_name]).join('.')}"
+      !field.nil?
+    end
+
+    failure_message do |actual|
+      @fail_message
+    end
+  end
 
 
   describe PetsController do
@@ -57,7 +129,7 @@ describe "Swagger Responses" do
         schema = response[:schema]
         expect(schema[:type]).to eq("array")
 
-        a_schema = schema[:items]
+        a_schema = resolve_refs(schema[:items])
         expect(a_schema).to have_field(:pet_name, 'string', {:description => 'Name of pet', :required => false})
         expect(a_schema).to have_field(:animal_type, 'string', {:description => 'Type of pet', :enum => ['dog','cat','iguana','kangaroo']})
       end
@@ -319,6 +391,24 @@ describe "Swagger Responses" do
         expect(pai_schema).to have_field(:did_visit_vet, 'boolean')
         expect(pai_schema).to have_field(:avg_meals_per_day, 'number')
       end
+
+      it "should return code 204 with array of integer" do
+        returns_obj = subject.returns.detect{|e| e.code == 204 }
+
+        puts returns_obj.to_json
+        expect(returns_obj.code).to eq(204)
+        expect(returns_obj.is_array?).to eq(false)
+
+        expect(returns_obj).to match_field_structure([:int_array, :enum_array])
+      end
+      it 'should have the 204 response described in the swagger' do
+        response = swagger_response_for('/pets/{id}/extra_info', 204)
+
+        schema = response[:schema]
+        expect(schema).to have_field(:int_array, 'array', {items: {type: 'number'}})
+        expect(schema).to have_field(:enum_array, 'array', {items: {type: 'string', enum: ['v1','v2','v3']}})
+      end
+
 
       it "should return code matching :unprocessable_entity (422) with spread out 'pet' and 'num_fleas'" do
         returns_obj = subject.returns.detect{|e| e.code == 422 }

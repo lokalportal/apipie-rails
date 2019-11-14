@@ -24,6 +24,10 @@ module Apipie
       Apipie.configuration.swagger_json_input_uses_refs
     end
 
+    def responses_use_reference?
+      Apipie.configuration.swagger_responses_use_refs?
+    end
+
     def include_warning_tags?
       Apipie.configuration.swagger_include_warning_tags
     end
@@ -259,6 +263,10 @@ module Apipie
       remove_colons method.resource.controller.name + "::" + method.method
     end
 
+    def swagger_id_for_typename(typename)
+      typename
+    end
+
     def swagger_op_id_for_path(http_method, path)
       # using lowercase http method, because the 'swagger-codegen' tool outputs
       # strange method names if the http method is in uppercase
@@ -334,19 +342,42 @@ module Apipie
     # Responses
     #--------------------------------------------------------------------------
 
-    def response_schema(response)
+    def json_schema_for_method_response(method, return_code, allow_nulls)
+      @definitions = {}
+      for response in method.returns
+        if response.code.to_s == return_code.to_s
+          schema = response_schema(response, allow_nulls) if response.code.to_s == return_code.to_s
+          schema[:definitions] = @definitions if @definitions != {}
+          return schema
+        end
+      end
+      nil
+    end
+
+    def json_schema_for_self_describing_class(cls, allow_nulls)
+      adapter = ResponseDescriptionAdapter.from_self_describing_class(cls)
+      response_schema(adapter, allow_nulls)
+    end
+
+    def response_schema(response, allow_nulls=false)
       begin
         # no need to warn about "missing default value for optional param" when processing response definitions
         prev_value = @disable_default_value_warning
         @disable_default_value_warning = true
-        schema = json_schema_obj_from_params_array(response.params_ordered)
+
+        if responses_use_reference? && response.typename
+          schema = {"$ref" => gen_referenced_block_from_params_array(swagger_id_for_typename(response.typename), response.params_ordered, allow_nulls)}
+        else
+          schema = json_schema_obj_from_params_array(response.params_ordered, allow_nulls)
+        end
+
       ensure
         @disable_default_value_warning = prev_value
       end
 
       if response.is_array? && schema
         schema = {
-            type: "array",
+            type: allow_nulls ? ["array","null"] : "array",
             items: schema
         }
       end
@@ -423,7 +454,7 @@ module Apipie
     # The core routine for creating a swagger parameter definition block.
     # The output is slightly different when the parameter is inside a schema block.
     #--------------------------------------------------------------------------
-    def swagger_atomic_param(param_desc, in_schema, name)
+    def swagger_atomic_param(param_desc, in_schema, name, allow_nulls)
       def save_field(entry, openapi_key, v, apipie_key=openapi_key, translate=false)
         if v.key?(apipie_key)
           if translate
@@ -444,7 +475,7 @@ module Apipie
       end
 
       if swagger_def[:type] == "array"
-        swagger_def[:items] = {type: "string"} # TODO: add support for arrays of non-string items
+        swagger_def[:items] = {type: "string"}
       end
 
       if swagger_def[:type] == "enum"
@@ -455,6 +486,21 @@ module Apipie
       if swagger_def[:type] == "object"  # we only get here if there is no specification of properties for this object
         swagger_def[:additionalProperties] = true
         warn_hash_without_internal_typespec(param_desc.name)
+      end
+
+      if param_desc.is_array?
+        new_swagger_def = {
+            items: swagger_def,
+            type: 'array'
+        }
+        swagger_def = new_swagger_def
+        if allow_nulls
+          swagger_def[:type] = [swagger_def[:type], "null"]
+        end
+      end
+
+      if allow_nulls
+        swagger_def[:type] = [swagger_def[:type], "null"]
       end
 
       if !in_schema
@@ -487,8 +533,8 @@ module Apipie
     end
 
 
-    def json_schema_obj_from_params_array(params_array)
-      (param_defs, required_params) = json_schema_param_defs_from_params_array(params_array)
+    def json_schema_obj_from_params_array(params_array, allow_nulls = false)
+      (param_defs, required_params) = json_schema_param_defs_from_params_array(params_array, allow_nulls)
 
       result = {type: "object"}
       result[:properties] = param_defs
@@ -498,17 +544,17 @@ module Apipie
       param_defs.length > 0 ? result : nil
     end
 
-    def gen_referenced_block_from_params_array(name, params_array)
+    def gen_referenced_block_from_params_array(name, params_array, allow_nulls=false)
       return ref_to(:name) if @definitions.key(:name)
 
-      schema_obj = json_schema_obj_from_params_array(params_array)
+      schema_obj = json_schema_obj_from_params_array(params_array, allow_nulls)
       return nil if schema_obj.nil?
 
       @definitions[name.to_sym] = schema_obj
       ref_to(name.to_sym)
     end
 
-    def json_schema_param_defs_from_params_array(params_array)
+    def json_schema_param_defs_from_params_array(params_array, allow_nulls = false)
       param_defs = {}
       required_params = []
 
@@ -526,7 +572,7 @@ module Apipie
         param_type = swagger_param_type(param_desc)
 
         if param_type == "object" && param_desc.validator.params_ordered
-          schema = json_schema_obj_from_params_array(param_desc.validator.params_ordered)
+          schema = json_schema_obj_from_params_array(param_desc.validator.params_ordered, allow_nulls)
           if param_desc.additional_properties
             schema[:additionalProperties] = true
           end
@@ -539,9 +585,18 @@ module Apipie
             schema = new_schema
           end
 
+          if allow_nulls
+            # ideally we would write schema[:type] = ["object", "null"]
+            # but due to a bug in the json-schema gem, we need to use anyOf
+            # see https://github.com/ruby-json-schema/json-schema/issues/404
+            new_schema = {
+                anyOf: [schema, {type: "null"}]
+            }
+            schema = new_schema
+          end
           param_defs[param_desc.name.to_sym] = schema if !schema.nil?
         else
-          param_defs[param_desc.name.to_sym] = swagger_atomic_param(param_desc, true, nil)
+          param_defs[param_desc.name.to_sym] = swagger_atomic_param(param_desc, true, nil, allow_nulls)
         end
       end
 
@@ -619,7 +674,7 @@ module Apipie
             warn_param_ignored_in_form_data(desc.name)
           end
         else
-          param_entry = swagger_atomic_param(desc, false, name)
+          param_entry = swagger_atomic_param(desc, false, name, false)
           if param_entry[:required]
             swagger_params_array.unshift(param_entry)
           else
