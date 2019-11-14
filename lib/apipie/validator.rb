@@ -57,6 +57,10 @@ module Apipie
         "TODO: validator description"
       end
 
+      def format_description_value(value)
+        "<code>#{CGI::escapeHTML(value.to_s)}</code>"
+      end
+
       def error
         ParamInvalid.new(param_name, @error_value, description)
       end
@@ -125,6 +129,8 @@ module Apipie
           'array'
         elsif @type.ancestors.include? Numeric
           'numeric'
+        elsif @type.ancestors.include? File
+          'file'
         else
           'string'
         end
@@ -148,7 +154,7 @@ module Apipie
       end
 
       def description
-        "Must match regular expression <code>/#{@regexp.source}/</code>."
+        "Must match regular expression #{format_description_value("/#{@regexp.source}/")}."
       end
     end
 
@@ -172,7 +178,7 @@ module Apipie
       end
 
       def description
-        string = @array.map { |value| "<code>#{value}</code>" }.join(', ')
+        string = @array.map { |value| format_description_value(value) }.join(', ')
         "Must be one of: #{string}."
       end
     end
@@ -225,7 +231,13 @@ module Apipie
 
       def has_valid_type?(value)
         if @items_type
-          value.kind_of?(@items_type)
+          item_validator = BaseValidator.find('', @items_type, nil, nil)
+
+          if item_validator
+            item_validator.valid?(value)
+          else
+            value.kind_of?(@items_type)
+          end
         else
           true
         end
@@ -266,7 +278,8 @@ module Apipie
       end
 
       def description
-        "Must be one of: #{@array.join(', ')}."
+        string = @array.map { |value| format_description_value(value) }.join(', ')
+        "Must be one of: #{string}."
       end
     end
 
@@ -398,6 +411,27 @@ module Apipie
       end
     end
 
+    class DecimalValidator < BaseValidator
+
+      def validate(value)
+        self.class.validate(value)
+      end
+
+      def self.build(param_description, argument, options, block)
+        if argument == :decimal
+          self.new(param_description)
+        end
+      end
+
+      def description
+        "Must be a decimal number."
+      end
+
+      def self.validate(value)
+        value.to_s =~ /\A^[-+]?[0-9]+([,.][0-9]+)?\Z$/
+      end
+    end
+
     class NumberValidator < BaseValidator
 
       def validate(value)
@@ -412,6 +446,10 @@ module Apipie
 
       def description
         "Must be a number."
+      end
+
+      def expected_type
+        'numeric'
       end
 
       def self.validate(value)
@@ -436,8 +474,8 @@ module Apipie
       end
 
       def description
-        string = %w(true false 1 0).map { |value| "<code>#{value}</code>" }.join(', ')
-        "Must be one of: #{string}"
+        string = %w(true false 1 0).map { |value| format_description_value(value) }.join(', ')
+        "Must be one of: #{string}."
       end
     end
 

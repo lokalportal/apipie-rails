@@ -5,7 +5,7 @@ module Apipie
 
     class Api
 
-      attr_accessor :short_description, :path, :http_method, :from_routes, :options
+      attr_accessor :short_description, :path, :http_method, :from_routes, :options, :returns
 
       def initialize(method, path, desc, options)
         @http_method = method.to_s
@@ -17,7 +17,8 @@ module Apipie
 
     end
 
-    attr_reader :full_description, :method, :resource, :apis, :examples, :see, :formats, :metadata, :headers, :show
+    attr_reader :full_description, :method, :resource, :apis, :examples, :see, :formats, :headers, :show
+    attr_accessor :metadata
 
     def initialize(method, resource, dsl_data)
       @method = method.to_s
@@ -34,6 +35,12 @@ module Apipie
         Apipie::ErrorDescription.from_dsl_data(args)
       end
 
+      @tag_list = dsl_data[:tag_list]
+
+      @returns = dsl_data[:returns].map do |code,args|
+        Apipie::ResponseDescription.from_dsl_data(self, code, args)
+      end
+
       @see = dsl_data[:see].map do |args|
         Apipie::SeeDescription.new(args)
       end
@@ -46,7 +53,8 @@ module Apipie
 
       @params_ordered = dsl_data[:params].map do |args|
         Apipie::ParamDescription.from_dsl_data(self, args)
-      end
+      end.reject{|p| p.response_only? }
+
       @params_ordered = ParamDescription.unify(@params_ordered)
       @headers = dsl_data[:headers]
 
@@ -83,6 +91,34 @@ module Apipie
 
       merge_params(all_params, @params_ordered)
       all_params.find_all(&:validator)
+    end
+
+    def returns_self
+      @returns
+    end
+
+    def tag_list
+      all_tag_list = []
+      parent = Apipie.get_resource_description(@resource.controller.superclass)
+
+      # get tags from parent resource description
+      parent_tags = [parent, @resource].compact.flat_map { |resource| resource._tag_list_arg }
+      Apipie::TagListDescription.new((parent_tags + @tag_list).uniq.compact)
+    end
+
+    def returns
+      all_returns = []
+      parent = Apipie.get_resource_description(@resource.controller.superclass)
+
+      # get response descriptions from parent resource description
+      [parent, @resource].compact.each do |resource|
+        resource_returns = resource._returns_args.map do |code, args|
+          Apipie::ResponseDescription.from_dsl_data(self, code, args)
+        end
+        merge_returns(all_returns, resource_returns)
+      end
+
+      merge_returns(all_returns, @returns)
     end
 
     def errors
@@ -151,6 +187,7 @@ module Apipie
         :full_description => Apipie.app.translate(@full_description, lang),
         :errors => errors.map(&:to_json),
         :params => params_ordered.map{ |param| param.to_json(lang) }.flatten,
+        :returns => @returns.map{ |return_item| return_item.to_json(lang) }.flatten,
         :examples => @examples,
         :metadata => @metadata,
         :see => see.map(&:to_json),
@@ -187,6 +224,12 @@ module Apipie
       new_param_names = Set.new(new_params.map(&:name))
       params.delete_if { |p| new_param_names.include?(p.name) }
       params.concat(new_params)
+    end
+
+    def merge_returns(returns, new_returns)
+      new_return_codes = Set.new(new_returns.map(&:code))
+      returns.delete_if { |p| new_return_codes.include?(p.code) }
+      returns.concat(new_returns)
     end
 
     def load_recorded_examples

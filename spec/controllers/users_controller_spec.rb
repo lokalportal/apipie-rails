@@ -482,7 +482,19 @@ describe UsersController do
             name: :OptionalHeaderName,
             description: 'Optional header description',
             options: {
-              required: false
+              required: false,
+              type: "string"
+            }
+          }
+        end
+
+        let(:expected_header_with_default) do
+          {
+            name: :HeaderNameWithDefaultValue,
+            description: 'Header with default value',
+            options: {
+              required: true,
+              default: 'default value'
             }
           }
         end
@@ -493,6 +505,7 @@ describe UsersController do
 
           compare_hashes headers[0], expected_required_header
           compare_hashes headers[1], expected_optional_header
+          compare_hashes headers[2], expected_header_with_default
         end
       end
 
