@@ -1,7 +1,7 @@
 require 'apipie/static_dispatcher'
 require 'apipie/routes_formatter'
 require 'yaml'
-require 'digest/md5'
+require 'digest/sha1'
 require 'json'
 
 module Apipie
@@ -55,8 +55,7 @@ module Apipie
     # this method does in depth search for the route controller
     def route_app_controller(app, route, visited_apps = [])
       if route.defaults[:controller]
-        controller_name = (route.defaults[:controller] + 'Controller').camelize
-        controller_name.safe_constantize
+        (route.defaults[:controller].camelize + 'Controller').safe_constantize
       end
     end
 
@@ -255,6 +254,16 @@ module Apipie
       @recorded_examples = nil
     end
 
+    def json_schema_for_method_response(version, controller_name, method_name, return_code, allow_nulls)
+      method = @resource_descriptions[version][controller_name].method_description(method_name)
+      raise NoDocumentedMethod.new(controller_name, method_name) if method.nil?
+      @swagger_generator.json_schema_for_method_response(method, return_code, allow_nulls)
+    end
+
+    def json_schema_for_self_describing_class(cls, allow_nulls)
+      @swagger_generator.json_schema_for_self_describing_class(cls, allow_nulls)
+    end
+
     def to_swagger_json(version, resource_name, method_name, lang, clear_warnings=false)
       return unless valid_search_args?(version, resource_name, method_name)
 
@@ -341,7 +350,7 @@ module Apipie
           all.update(version => Apipie.to_json(version))
         end
       end
-      Digest::MD5.hexdigest(JSON.dump(all_docs))
+      Digest::SHA1.hexdigest(JSON.dump(all_docs))
     end
 
     def checksum
@@ -424,8 +433,7 @@ module Apipie
     end
 
     def load_controller_from_file(controller_file)
-      controller_class_name = controller_file.gsub(/\A.*\/app\/controllers\//,"").gsub(/\.\w*\Z/,"").camelize
-      controller_class_name.constantize
+      require_dependency controller_file
     end
 
     def ignored?(controller, method = nil)
