@@ -8,6 +8,7 @@ require File.expand_path("../dummy/config/environment", __FILE__)
 require 'rspec/rails'
 
 require 'apipie-rails'
+require 'test_engine'
 
 module Rails4Compatibility
   module Testing
@@ -30,6 +31,46 @@ module Rails4Compatibility
         yield method, action, hash
       end
     end
+  end
+end
+
+
+#
+# Matcher to validate the properties (name, type and options) of a single field in the
+# internal representation of a swagger schema
+#
+# For example, code such as:
+#       schema = swagger[:paths][<path>][<method>][:responses][<code>][:schema]
+#       expect(schema).to have_field(:pet_name, 'string', {:required => false})
+#
+# will verify that the selected response schema includes a required string field called 'pet_name'
+#
+RSpec::Matchers.define :have_field do |name, type, opts={}|
+  def fail(msg)
+    @fail_message = msg
+    false
+  end
+
+  @fail_message = ""
+
+  failure_message do |actual|
+    @fail_message
+  end
+
+  match do |unresolved|
+    actual = resolve_refs(unresolved)
+    return fail("expected schema to have type 'object' (got '#{actual[:type]}')") if (actual[:type]) != 'object'
+    return fail("expected schema to include param named '#{name}' (got #{actual[:properties].keys})") if (prop = actual[:properties][name]).nil?
+    return fail("expected param '#{name}' to have type '#{type}' (got '#{prop[:type]}')") if prop[:type] != type
+    return fail("expected param '#{name}' to have description '#{opts[:description]}' (got '#{prop[:description]}')") if opts[:description] && prop[:description] != opts[:description]
+    return fail("expected param '#{name}' to have enum '#{opts[:enum]}' (got #{prop[:enum]})") if opts[:enum] && prop[:enum] != opts[:enum]
+    return fail("expected param '#{name}' to have items '#{opts[:items]}' (got #{prop[:items]})") if opts[:items] && prop[:items] != opts[:items]
+    if !opts.include?(:required) || opts[:required] == true
+      return fail("expected param '#{name}' to be required") unless actual[:required].include?(name)
+    else
+      return fail("expected param '#{name}' to be optional") if actual[:required].include?(name)
+    end
+    true
   end
 end
 
