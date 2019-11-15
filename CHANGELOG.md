@@ -1,6 +1,75 @@
  Changelog
 ===========
 
+[v0.5.16](https://github.com/Apipie/apipie-rails/tree/v0.5.16) (2019-05-22)
+--------
+
+[Full Changelog](https://github.com/Apipie/apipie-rails/compare/v0.5.15...v0.5.16)
+
+- Load file directly instead of using Rails constant [\#665](https://github.com/Apipie/apipie-rails/pull/665) ([speckins](https://github.com/speckins))
+
+[v0.5.15](https://github.com/Apipie/apipie-rails/tree/v0.5.15) (2019-01-03)
+--------
+[Full Changelog](https://github.com/Apipie/apipie-rails/compare/v0.5.14...v0.5.15)
+
+
+- Fix authorization of resources [\#655](https://github.com/Apipie/apipie-rails/pull/655) ([NielsKSchjoedt](https://github.com/NielsKSchjoedt))
+- Use configured value when swagger\_content\_type\_input argument is not passed [\#648](https://github.com/Apipie/apipie-rails/pull/648) ([nullnull](https://github.com/nullnull))
+- Fix "ArgumentError: string contains null byte" on malformed stings [\#477](https://github.com/Apipie/apipie-rails/pull/477) ([avokhmin](https://github.com/avokhmin))
+
+v0.5.14
+-------
+- HTML escape validator values [\#645](https://github.com/Apipie/apipie-rails/pull/645) ([ekohl](https://github.com/ekohl))
+- Support for adding new params via `update\_api` [\#642](https://github.com/Apipie/apipie-rails/pull/642) ([iNecas](https://github.com/iNecas))
+- Allow the "null" JSON string to be used as a parameter in Apipie spec examples \(`show\_in\_doc`\) [\#641](https://github.com/Apipie/apipie-rails/pull/641) ([enrique-guillen](https://github.com/enrique-guillen))
+- Fix examples recording for specific cases  [\#640](https://github.com/Apipie/apipie-rails/pull/640) ([Marri](https://github.com/Marri))
+- Add description section to response [\#639](https://github.com/Apipie/apipie-rails/pull/639) ([X1ting](https://github.com/X1ting))
+
+
+v0.5.13
+-------
+-  Fix swagger generation if a controller's parent doesn't define a resource_description [\#637](https://github.com/Apipie/apipie-rails/pull/637) ([enrique-guillen](https://github.com/enrique-guillen))
+
+v0.5.12
+-------
+- Fix returns displaying [\#635](https://github.com/Apipie/apipie-rails/pull/635) ([X1ting](https://github.com/X1ting))
+
+v0.5.11
+-------
+
+- Adds swagger tags in swagger output [\#634](https://github.com/Apipie/apipie-rails/pull/634) ([enrique-guillen](https://github.com/enrique-guillen))
+- Generate swagger with headers [\#630](https://github.com/Apipie/apipie-rails/pull/630) ([Uysim](https://github.com/Uysim))
+- Fix examples not being generated for Rails < 5.0.0 [\#633](https://github.com/Apipie/apipie-rails/pull/633) ([RomanKapitonov](https://github.com/RomanKapitonov))
+
+v0.5.10
+------
+
+- Support response validation [\#626](https://github.com/Apipie/apipie-rails/pull/626) ([COzero](https://github.com/COzero))
+
+v0.5.9
+------
+
+- Support response validation [\#619](https://github.com/Apipie/apipie-rails/pull/619) ([abenari](https://github.com/abenari))
+- Expect :number to have type 'numeric' [\#614](https://github.com/Apipie/apipie-rails/pull/614) ([akofink](https://github.com/akofink))
+- New validator - DecimalValidator [\#431](https://github.com/Apipie/apipie-rails/pull/431) ([kiddrew](https://github.com/kiddrew))
+
+
+v0.5.8
+------
+
+- Swagger json includes apipie's description as swagger's description [\#615](https://github.com/Apipie/apipie-rails/pull/615) ([gogotanaka](https://github.com/gogotanaka))
+- Fix api! issue by using underscore when appending `controller` to the default controller string [\#613](https://github.com/Apipie/apipie-rails/pull/613) ([kevinmarx](https://github.com/kevinmarx))
+- Possibility to compress examples [\#600](https://github.com/Apipie/apipie-rails/pull/600) ([Haniyya](https://github.com/Haniyya))
+- Possibility to describe responses [\#588](https://github.com/Apipie/apipie-rails/pull/588) ([elasti-ron](https://github.com/elasti-ron))
+
+v0.5.7
+------
+
+- Fix example recording with Rails 5 [\#607](https://github.com/Apipie/apipie-rails/pull/607) ([adamruzicka](https://github.com/adamruzicka))
+- Use SHA1 instead of MD5 to enable using APIPIE at FIPS-enables systems [\#605](https://github.com/Apipie/apipie-rails/pull/605) ([iNecas](https://github.com/iNecas))
+- Replaced String\#constantize with String\#safe\_constantize so apipie won't break on a missing constant [\#575](https://github.com/Apipie/apipie-rails/pull/575) ([Haniyya](https://github.com/Haniyya))
+- Added Swagger generation [\#569](https://github.com/Apipie/apipie-rails/pull/569) ([elasti-ron](https://github.com/elasti-ron))
+
 v0.5.6
 ------
 
